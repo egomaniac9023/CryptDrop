@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptDrop - Changelog</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark">
+  <div class="container">
+    <div class="card">
+      <h1>Changelog</h1>
+      
+      <section class="changelog-section">
+        <h2>Version 1.2.0 (May 17, 2025)</h2>
+        <ul>
+          <li><strong>New:</strong> Added forensic countermeasures documentation page</li>
+          <li><strong>New:</strong> Implemented changelog page</li>
+          <li><strong>Improved:</strong> Updated footer links on all pages</li>
+          <li><strong>Improved:</strong> Added CSS styles for new pages</li>
+        </ul>
+      </section>
+
+      <section class="changelog-section">
+        <h2>Version 1.1.0 (May 15, 2025)</h2>
+        <ul>
+          <li><strong>Fixed:</strong> Improved confirmation mechanism - notes are now only deleted after confirmation</li>
+          <li><strong>New:</strong> Added endpoint for note metadata without deletion</li>
+          <li><strong>New:</strong> Added Privacy Policy and FAQ pages</li>
+          <li><strong>Improved:</strong> Footer with links to Privacy Policy and FAQ</li>
+          <li><strong>Improved:</strong> Redesigned entire UI for better user experience</li>
+        </ul>
+      </section>
+
+      <section class="changelog-section">
+        <h2>Version 1.0.0 (May 10, 2025)</h2>
+        <ul>
+          <li><strong>New:</strong> Initial implementation of the CryptDrop application</li>
+          <li><strong>New:</strong> File attachments functionality (encrypted)</li>
+          <li><strong>New:</strong> Confirmation step before viewing notes</li>
+          <li><strong>New:</strong> Implemented forensic countermeasures</li>
+          <li><strong>Security:</strong> Implemented comprehensive XSS protection measures</li>
+          <li><strong>Security:</strong> Zero-knowledge architecture for maximum privacy</li>
+          <li><strong>Security:</strong> Added DOM-Purify and XSS protection filters</li>
+          <li><strong>Security:</strong> Input validation and sanitization for all data</li>
+          <li><strong>Security:</strong> Rate-limiting to protect against brute-force attacks</li>
+          <li><strong>Improved:</strong> Set up Content-Security-Policy</li>
+        </ul>
+      </section>
+
+      <section class="changelog-section">
+        <h2>Technical Implementation Details</h2>
+        <h3>Security Improvements</h3>
+        <ul>
+          <li>Implementation of Helmet for secure HTTP headers</li>
+          <li>XSS protection through Content-Security-Policy</li>
+          <li>Built-in rate limiters for API endpoints</li>
+          <li>Implementation of DOMPurify for client-side sanitization</li>
+          <li>Secure methods for file deletion in the database</li>
+        </ul>
+
+        <h3>Database Changes</h3>
+        <ul>
+          <li>Schema extended to support file attachments</li>
+          <li>Implementation of secure deletion (DoD 5220.22-M standard)</li>
+          <li>Automatic vacuuming after deletion operations</li>
+        </ul>
+
+        <h3>Frontend Changes</h3>
+        <ul>
+          <li>UI redesign for better UX</li>
+          <li>Two-step process for viewing notes</li>
+          <li>Client-side encryption with WebCrypto API</li>
+          <li>Memory clearing functions after encryption/decryption</li>
+        </ul>
+
+        <h3>New Dependencies</h3>
+        <ul>
+          <li><code>dompurify</code>: For client-side sanitization</li>
+          <li><code>xss</code>: For additional XSS protection</li>
+          <li><code>express-rate-limit</code>: For limiting requests</li>
+          <li><code>express-validator</code>: For input validation</li>
+          <li><code>sanitize-html</code>: For HTML sanitization</li>
+          <li><code>cookie-parser</code>: For potential authentication features</li>
+        </ul>
+      </section>
+
+      <div class="navigation-links">
+        <a href="index.html">Back to Main Page</a>
+        <a href="forensics.html">View Forensic Countermeasures</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CryptDrop - A secure, one-time readable note service</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="faq.html">FAQ</a> |
+      <a href="forensics.html">Forensic Countermeasures</a> |
+      <a href="changelog.html">Changelog</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="sanitize.js"></script>
+</body>
+</html>

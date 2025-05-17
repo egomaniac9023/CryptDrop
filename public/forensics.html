@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptDrop - Forensic Countermeasures</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark">
+  <div class="container">
+    <div class="card">
+      <h1>Forensic Countermeasures</h1>
+      
+      <section class="forensics-section">
+        <h2>Overview</h2>
+        <p>Our CryptDrop service implements advanced forensic countermeasures to ensure that messages are truly irretrievably deleted after being read or upon expiration. Typical deletion operations in databases only remove references to the data, not the data itself, which could allow for forensic recovery.</p>
+      </section>
+
+      <section class="forensics-section">
+        <h2>Server-Side Security Measures</h2>
+        <h3>1. Multiple Overwrites Before Deletion</h3>
+        <p>Instead of simply deleting data, it is first overwritten multiple times:</p>
+        <ul>
+          <li><strong>First Phase:</strong> Overwrite all bytes with 0s</li>
+          <li><strong>Second Phase:</strong> Overwrite all bytes with 1s (0xFF)</li>
+          <li><strong>Third Phase:</strong> Overwrite with random data</li>
+        </ul>
+        <p>This method follows the DoD 5220.22-M standard for secure data deletion and makes recovery using known forensic methods virtually impossible.</p>
+
+        <pre class="code-snippet">
+function secureOverwriteNote(id) {
+  // First overwrite the data with 0s
+  db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [zerosData, id]);
+  
+  // Then overwrite with 1s
+  db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [onesData, id]);
+  
+  // Finally overwrite with random data
+  db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [randomData, id]);
+}</pre>
+
+        <h3>2. Database Vacuuming (VACUUM)</h3>
+        <p>After deletion, a SQLite VACUUM operation is performed:</p>
+        <ul>
+          <li>Reorganizes the database file</li>
+          <li>Removes unused storage space</li>
+          <li>Prevents deleted data from remaining in free storage space</li>
+        </ul>
+
+        <pre class="code-snippet">
+function vacuumDatabase() {
+  return new Promise((resolve, reject) => {
+    db.run('VACUUM', err => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}</pre>
+
+        <h3>3. Protection Against Timing Attacks</h3>
+        <p>To prevent attackers from gaining information through time analysis:</p>
+        <ul>
+          <li>Random delays between 50-200ms for each request</li>
+          <li>Same response time for existing and non-existing notes</li>
+        </ul>
+
+        <pre class="code-snippet">
+// Implement random delay
+const randomDelay = crypto.randomInt(50, 200);
+await new Promise(resolve => setTimeout(resolve, randomDelay));</pre>
+
+        <h3>4. Periodic Maintenance</h3>
+        <p>Automated maintenance tasks run regularly in the background:</p>
+        <ul>
+          <li>Hourly check for expired notes</li>
+          <li>Secure deletion of expired notes</li>
+          <li>Database vacuuming every 12 hours</li>
+        </ul>
+      </section>
+
+      <section class="forensics-section">
+        <h2>Client-Side Security Measures</h2>
+        <h3>1. Memory Clearing</h3>
+        <p>After decrypting data in the browser:</p>
+        <ul>
+          <li>ArrayBuffer with sensitive data is identified and monitored</li>
+          <li>Multiple overwrites in browser memory (zeros, ones, random values)</li>
+          <li>Explicit request to the garbage collector when available</li>
+        </ul>
+
+        <pre class="code-snippet">
+function secureWipeBuffer(buffer) {
+  const view = new Uint8Array(buffer);
+  
+  // Overwrite with zeros
+  view.fill(0);
+  
+  // Overwrite with ones
+  view.fill(255);
+  
+  // Overwrite with random data
+  window.crypto.getRandomValues(view);
+}</pre>
+
+        <h3>2. Automatic Memory Clearing</h3>
+        <p>Security mechanisms for active monitoring and clearing:</p>
+        <ul>
+          <li>When leaving or switching pages</li>
+          <li>After inactivity (5 minutes)</li>
+          <li>When developer tools are detected</li>
+          <li>When switching tabs (Page Visibility API)</li>
+        </ul>
+
+        <h3>3. URL Protection Measures</h3>
+        <p>The decryption key is transmitted in the URL fragment (#) and:</p>
+        <ul>
+          <li>Is never sent to the server</li>
+          <li>Is removed from the URL immediately after decryption</li>
+          <li>Prevents saving the complete URL in browser history</li>
+        </ul>
+
+        <pre class="code-snippet">
+// Remove the key from the URL
+history.replaceState(null, null, window.location.pathname + window.location.search);</pre>
+
+        <h3>4. Active Protection Against Forensic Browser Tools</h3>
+        <p>Detection and prevention of common data extraction methods:</p>
+        <ul>
+          <li>Monitoring for opened developer tools</li>
+          <li>Prevention of screenshots through key combinations</li>
+          <li>Blocking of save/print functions</li>
+          <li>Disabling of context menu (right-click)</li>
+        </ul>
+      </section>
+
+      <section class="forensics-section">
+        <h2>Hardening Measures Against Forensics</h2>
+        <h3>1. Zero-Knowledge Architecture</h3>
+        <p>The server never knows:</p>
+        <ul>
+          <li>The content of the message (only encrypted version)</li>
+          <li>The decryption key</li>
+          <li>The actual files (only encrypted versions)</li>
+        </ul>
+        <p>Even if the server were compromised, no content could be extracted.</p>
+
+        <h3>2. Minimal Logging</h3>
+        <p>The application does not log sensitive data:</p>
+        <ul>
+          <li>No IP addresses (except temporarily for rate limiting)</li>
+          <li>No user agents or session information</li>
+          <li>No access timestamps for specific notes</li>
+        </ul>
+
+        <h3>3. Memory Clearing on Server Shutdown</h3>
+        <p>Before shutting down the server:</p>
+        <ul>
+          <li>Complete database cleanup</li>
+          <li>Vacuuming of the database</li>
+          <li>Secure deletion of temporary files</li>
+        </ul>
+      </section>
+
+      <section class="forensics-section">
+        <h2>Technical Background Information</h2>
+        
+        <h3>Why Conventional Deletion Is Not Enough</h3>
+        <p>With common database operations like <code>DELETE FROM notes WHERE id = ?</code>, only the references to the data are removed. The actual data remains in memory until it is overwritten. This enables forensic recovery.</p>
+        
+        <h3>DoD 5220.22-M Standard</h3>
+        <p>Our system is based on the US Department of Defense standard for data deletion, which requires multiple overwrites with different patterns to irretrievably remove data.</p>
+        
+        <h3>SQLite-specific Measures</h3>
+        <p>SQLite stores data in a single file and uses a journaling file. Both can contain forensic artifacts:</p>
+        <ul>
+          <li>Our system overwrites both the main data and possible journal entries</li>
+          <li>VACUUM operation removes "free" storage that might contain deleted data</li>
+          <li>WAL mode (Write-Ahead Logging) is avoided as it creates additional files</li>
+        </ul>
+        
+        <h3>Web Crypto API</h3>
+        <p>For encryption, we exclusively use the native Web Crypto API, which:</p>
+        <ul>
+          <li>Provides higher memory protection than JavaScript-based cryptography</li>
+          <li>Runs in optimized native code and leaves fewer memory footprints</li>
+          <li>Can be better protected from memory access by the browser</li>
+        </ul>
+      </section>
+
+      <div class="navigation-links">
+        <a href="index.html">Back to Main Page</a>
+        <a href="changelog.html">View Changelog</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CryptDrop - A secure, one-time readable note service</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="faq.html">FAQ</a> |
+      <a href="forensics.html">Forensic Countermeasures</a> |
+      <a href="changelog.html">Changelog</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="sanitize.js"></script>
+</body>
+</html>

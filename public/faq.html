@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptDrop - Frequently Asked Questions</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark">
+  <div class="container">
+    <div class="card">
+      <h1>Frequently Asked Questions</h1>
+      
+      <section class="faq-section">
+        <div class="faq-item">
+          <h2>How secure are my messages?</h2>
+          <p>Your messages are secured using AES-256 encryption, which is implemented directly in your browser using the Web Crypto API. The encryption key is never sent to our server. Only the encrypted content is transmitted and stored.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>Can the site administrators read my messages?</h2>
+          <p>No. Due to our zero-knowledge architecture, we do not have access to your encryption keys or unencrypted content. The messages are encrypted in your browser before being sent to our servers, and we only store the encrypted version.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>What happens when someone views my note?</h2>
+          <p>When a recipient opens the link and confirms they want to view the note, the note is immediately and permanently deleted from our servers after it's served to their browser. Additionally, we employ forensic countermeasures to ensure the data cannot be recovered.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>How long are notes stored?</h2>
+          <p>Notes are stored for a maximum of 24 hours from creation. If they are not viewed within this period, they are automatically deleted. Once a note is viewed, it is instantly deleted from our servers.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>What if I forgot to copy the note URL?</h2>
+          <p>Unfortunately, there is no way to recover access to a note if you've lost the URL. The URL contains the encryption key (after the # symbol) which is required to decrypt the message. We recommend copying the URL immediately after creating a note.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>What file types can I attach?</h2>
+          <p>You can attach almost any file type up to 15MB in size. All attached files are encrypted in your browser before being uploaded, similar to the note content.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>Can someone read my note if they intercept the URL?</h2>
+          <p>Yes. The encryption key is contained in the URL (after the # symbol). Anyone who has the complete URL can decrypt and read the note. We recommend sharing the URL through secure channels and using additional authentication methods for highly sensitive information.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>Is my data monitored or analyzed?</h2>
+          <p>No. We do not monitor, analyze, or data-mine any content. Since all data is encrypted, we could not analyze it even if we wanted to.</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>What data do you log?</h2>
+          <p>We only temporarily store IP addresses for rate limiting purposes to prevent abuse. These are never associated with the content of messages and are only kept in memory for short periods (maximum 1 hour).</p>
+        </div>
+        
+        <div class="faq-item">
+          <h2>Can I password protect my notes?</h2>
+          <p>This feature is not currently implemented but is being considered for future updates.</p>
+        </div>
+      </section>
+      
+      <div class="navigation-links">
+        <a href="index.html">Back to Main Page</a>
+        <a href="privacy-policy.html">Read Our Privacy Policy</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CryptDrop - A secure, one-time readable note service</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="faq.html">FAQ</a> |
+      <a href="forensics.html">Forensic Countermeasures</a> |
+      <a href="changelog.html">Changelog</a>
+    </div>
+  </footer>
+</body>
+</html>

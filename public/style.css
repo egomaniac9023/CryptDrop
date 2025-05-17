@@ -1,0 +1,507 @@
+/* 
+ * Global styles for Privnote clone
+ * Dark mode is default
+ */
+
+:root {
+  --bg-color: #121212;
+  --card-bg-color: #1e1e1e;
+  --text-color: #e0e0e0;
+  --accent-color: #4f7df5;
+  --error-color: #f54f4f;
+  --success-color: #4ff585;
+  --border-color: #333333;
+  --input-bg-color: #2a2a2a;
+}
+
+/* Light mode styles (for future support) */
+body.light {
+  --bg-color: #f5f5f5;
+  --card-bg-color: #ffffff;
+  --text-color: #333333;
+  --accent-color: #2d59d3;
+  --error-color: #d32d2d;
+  --success-color: #2dd35e;
+  --border-color: #e0e0e0;
+  --input-bg-color: #f0f0f0;
+}
+
+/* Also support system preference */
+@media (prefers-color-scheme: light) {
+  body:not(.dark) {
+    --bg-color: #f5f5f5;
+    --card-bg-color: #ffffff;
+    --text-color: #333333;
+    --accent-color: #2d59d3;
+    --error-color: #d32d2d;
+    --success-color: #2dd35e;
+    --border-color: #e0e0e0;
+    --input-bg-color: #f0f0f0;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card {
+  background-color: var(--card-bg-color);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--accent-color);
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+textarea, input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+textarea:focus, input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+button {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: var(--accent-color);
+  opacity: 0.9;
+}
+
+button:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+.link-container {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--input-bg-color);
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.message-box {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 4px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  background-color: var(--input-bg-color);
+}
+
+.success-msg {
+  color: var(--success-color);
+}
+
+.error-msg {
+  color: var(--error-color);
+}
+
+.loading {
+  margin: 2rem auto;
+  text-align: center;
+  display: none;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid var(--accent-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  margin-top: auto;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.copy-btn {
+  margin-top: 1rem;
+  display: block;
+  width: 100%;
+}
+
+.warning {
+  background-color: rgba(255, 200, 0, 0.15);
+  border-left: 4px solid #ffc800;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.hidden {
+  display: none;
+}
+
+/* File attachment styles */
+.attachment-section {
+  border: 1px dashed var(--border-color);
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: var(--card-bg-color);
+}
+
+.attachment-label {
+  width: 100%;
+  cursor: pointer;
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.file-button {
+  background-color: var(--input-bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  margin-right: 1rem;
+  font-size: 0.9rem;
+}
+
+.hidden-file-input {
+  opacity: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.file-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: var(--input-bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.file-preview-container {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.file-preview {
+  max-width: 100%;
+  max-height: 150px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.file-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.file-preview .file-icon {
+  font-size: 3rem;
+  color: var(--accent-color);
+}
+
+.file-info {
+  margin-bottom: 1rem;
+}
+
+.file-info p {
+  margin: 0.3rem 0;
+  font-size: 0.9rem;
+}
+
+.remove-file {
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+/* Message with attachment styles */
+.attachment-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg-color);
+}
+
+.attachment-download {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--card-bg-color);
+  margin-top: 0.5rem;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+}
+
+.attachment-icon {
+  margin-right: 0.75rem;
+  font-size: 1.5rem;
+  color: var(--accent-color);
+}
+
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.attachment-name {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.attachment-size {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.download-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Confirmation button styles */
+.confirm-view-container {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.confirm-view-btn {
+  background-color: var(--error-color);
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirm-view-btn:hover {
+  background-color: #d32d2d;
+  transform: scale(1.05);
+}
+
+.confirm-message {
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+/* Privacy Policy and FAQ styles */
+.policy-section,
+.faq-item {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.policy-section:last-child,
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.policy-section h2,
+.faq-item h2 {
+  color: var(--accent-color);
+  margin-bottom: 0.75rem;
+}
+
+.policy-section ul,
+.faq-item ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.policy-section ul li,
+.faq-item ul li {
+  margin-bottom: 0.5rem;
+}
+
+.navigation-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.navigation-links a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.navigation-links a:hover {
+  text-decoration: underline;
+}
+
+/* Footer links */
+.footer-links {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.footer-links a {
+  color: var(--text-color);
+  opacity: 0.8;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.footer-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Forensics and changelog specific styles */
+.forensics-section,
+.changelog-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.forensics-section:last-child,
+.changelog-section:last-child {
+  border-bottom: none;
+}
+
+.forensics-section h2,
+.changelog-section h2 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.forensics-section h3,
+.changelog-section h3 {
+  color: var(--text-color);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.code-snippet {
+  background-color: var(--bg-darker);
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.changelog-section ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  list-style-type: disc;
+}
+
+.changelog-section ul li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.changelog-section ul li strong {
+  color: var(--accent-color);
+  font-weight: 600;
+}

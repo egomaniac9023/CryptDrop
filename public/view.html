@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptDrop - View Secure Note</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark" data-csp-nonce="%%SERVER_NONCE%%">
+  <div class="container">
+    <div class="card">
+      <h1>Secure Note</h1>
+      
+      <div id="loading" class="loading" style="display: block;">
+        <div class="loading-spinner"></div>
+        <p>Loading note information...</p>
+      </div>
+      
+      <div id="confirmView" class="hidden">
+        <h2>Secure Note Ready</h2>
+        <p class="warning">
+          <strong>Important:</strong> This note will be permanently deleted from the server after viewing.
+          You will only be able to see it once.</p>
+        <div class="confirm-view-container">
+          <p class="confirm-message">Are you sure you want to view this note?</p>
+          <button id="confirmViewBtn" class="confirm-view-btn">Yes, View This Note Now</button>
+        </div>
+        <div id="noteInfo" class="note-info">
+          <p>Created: <span id="noteDate">-</span></p>
+          <p>Contains attachment: <span id="hasAttachment">-</span></p>
+        </div>
+      </div>
+      
+      <div id="noteContent" class="hidden">
+        <h2>Decrypted Message:</h2>
+        <p class="warning"><strong>Warning:</strong> This note has been deleted from the server and cannot be viewed again.</p>
+        <div id="decryptedMessage" class="message-box"></div>
+        
+        <!-- Attachment section (will only show if there's an attachment) -->
+        <div id="attachmentContainer" class="attachment-container hidden">
+          <h3>Attachment:</h3>
+          <div id="attachmentView"></div>
+        </div>
+        
+        <div class="form-group">
+          <a href="index.html" class="btn">Create a New Secure Note</a>
+        </div>
+      </div>
+      
+      <div id="errorMessage" class="hidden">
+        <h2 class="error-msg">Note Not Available</h2>
+        <p>This note doesn't exist, has already been viewed, or has expired.</p>
+        <div class="form-group">
+          <a href="index.html">Create a New Secure Note</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CryptDrop - A secure, one-time readable note service</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="faq.html">FAQ</a> |
+      <a href="forensics.html">Forensic Countermeasures</a> |
+      <a href="changelog.html">Changelog</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="sanitize.js"></script>
+  <script src="view.js"></script>
+</body>
+</html>

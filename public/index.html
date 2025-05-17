@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptDrop - Create a note</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark" data-csp-nonce="%%SERVER_NONCE%%">
+  <div class="container">
+    <div class="card">
+      <h1>Create Secure Note</h1>
+      
+      <div class="warning">
+        <p><strong>Security Notice:</strong> Your message will be encrypted in your browser. The server never receives the unencrypted content.</p>
+      </div>
+      
+      <form id="noteForm">
+        <div class="form-group">
+          <label for="message">Your Secret Message:</label>
+          <textarea id="message" required placeholder="Type your secret message here..."></textarea>
+        </div>
+        
+        <div class="form-group attachment-section">
+          <label for="attachment" class="attachment-label">
+            <span>Add File Attachment (optional, max 15MB):</span>
+            <div class="file-input-wrapper">
+              <button type="button" class="file-button">Choose File</button>
+              <span id="fileNameDisplay">No file selected</span>
+            </div>
+          </label>
+          <input type="file" id="attachment" class="hidden-file-input">
+          <div id="fileDetails" class="file-details hidden">
+            <div class="file-preview-container">
+              <div id="filePreview" class="file-preview"></div>
+            </div>
+            <div class="file-info">
+              <p id="fileName"></p>
+              <p id="fileSize"></p>
+              <p id="fileType"></p>
+            </div>
+            <button type="button" id="removeFile" class="remove-file">Remove File</button>
+          </div>
+        </div>
+        
+        <button type="submit" id="submitBtn">Create Secure Note</button>
+      </form>
+      
+      <div id="result" class="hidden">
+        <h2>Your Secure Note Link:</h2>
+        <p>Share this link with the recipient. The note will be deleted after it's viewed or after 24 hours.</p>
+        <div id="noteLink" class="link-container"></div>
+        <button id="copyBtn" class="copy-btn">Copy Link</button>
+      </div>
+      
+      <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <p>Creating your secure note...</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CryptDrop - A secure, one-time readable note service</p>
+    <div class="footer-links">
+      <a href="privacy-policy.html">Privacy Policy</a> | 
+      <a href="faq.html">FAQ</a> |
+      <a href="forensics.html">Forensic Countermeasures</a> |
+      <a href="changelog.html">Changelog</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="sanitize.js"></script>
+  <script src="create.js"></script>
+</body>
+</html>
