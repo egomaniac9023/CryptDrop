@@ -1,15 +1,19 @@
-# Privnote Clone
+# CryptDrop
 
-A simple web-based private note sharing service with client-side encryption. This application allows users to create secure notes that can only be viewed once and automatically expire after 24 hours.
+A secure web-based private note sharing service with client-side encryption and forensic countermeasures. This application allows users to create secure notes that can only be viewed once and automatically expire after 24 hours.
 
 ## Features
 
 - Client-side encryption using the Web Crypto API
 - One-time readable notes (deleted after viewing)
 - Automatic expiration after 24 hours
+- Secure file attachments with client-side encryption
+- Confirmation step before viewing notes to prevent accidental deletion
+- Advanced forensic countermeasures to prevent data recovery
 - Dark mode by default
 - Simple and clean UI
 - No user accounts or login required
+- Comprehensive documentation (Privacy Policy, FAQ, Forensic Countermeasures)
 
 ## Security
 
@@ -28,8 +32,8 @@ A simple web-based private note sharing service with client-side encryption. Thi
 
 1. Clone the repository:
 ```
-git clone <repository-url>
-cd privnote-clone
+git clone https://github.com/egomaniac9023/CryptDrop.git
+cd CryptDrop
 ```
 
 2. Install dependencies:
@@ -63,7 +67,7 @@ The application will be available at: http://localhost:3000
 ## File Structure
 
 ```
-/privnote-clone
+/cryptdrop
   /public
     index.html       # Create note page
     view.html        # View note page
