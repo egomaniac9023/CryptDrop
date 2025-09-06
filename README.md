@@ -27,6 +27,9 @@ A secure web-based private note sharing service with client-side encryption and 
 - **Professional error handling** with visual feedback and retry functionality
 - **Form validation** with field-specific error messages
 - **Toast notifications** for user feedback
+- **Forensic-grade secure delete** button for browser memory clearing
+- **Automatic redirect** after secure deletion to main page
+- **Minimalistic animations** that match website design
 - **Dark mode** by default with light mode support
 - **Responsive design** for mobile and desktop
 - **Comprehensive documentation** (Privacy Policy, FAQ, Forensic Countermeasures, Changelog)
@@ -38,6 +41,8 @@ A secure web-based private note sharing service with client-side encryption and 
 - **Encryption keys never sent** to the server
 - **URL fragment storage** (after #) - not transmitted to server
 - **Memory clearing** after encryption/decryption operations
+- **Forensic secure deletion** with multiple overwrites of browser memory
+- **Blob URL revocation** for secure attachment cleanup
 - **Content sanitization** to prevent XSS attacks
 
 ### Server-Side Security
@@ -48,6 +53,7 @@ A secure web-based private note sharing service with client-side encryption and 
 - **Database vacuuming** after deletion operations
 - **Protection against compression attacks** (zip bombs, decompression bombs)
 - **HTTP security headers** via Helmet.js
+- **Content Security Policy** with data: and blob: URL support for file previews
 - **Rate limiting** to prevent abuse
 - **Audit logging** for security monitoring
 
@@ -118,6 +124,7 @@ For production environments:
 2. **Decryption**: Key from URL fragment decrypts message locally
 3. **Secure deletion**: Note immediately deleted from server with forensic countermeasures
 4. **Memory clearing**: Encryption keys cleared from browser memory
+5. **Forensic delete option**: Manual secure deletion with multiple overwrites and automatic redirect
 
 ### Security Measures
 - **Dual encryption**: Client-side AES-GCM + Server-side AES-256-CBC

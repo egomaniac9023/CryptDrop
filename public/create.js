@@ -170,6 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
           };
         } catch (fileError) {
           console.error('Error encrypting file:', fileError);
+          if (window.errorHandler) {
+            window.errorHandler.showError('File Encryption Error', 'Failed to encrypt the attached file. The note will be created without the attachment.', 'file');
+          }
           // Continue without the file if encryption fails
         }
       }

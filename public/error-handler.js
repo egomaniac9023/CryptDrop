@@ -12,10 +12,20 @@ class ErrorHandler {
   }
 
   init() {
+    // Wait for DOM if not ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.setupElements());
+    } else {
+      this.setupElements();
+    }
+  }
+
+  setupElements() {
     // Get DOM elements
     this.errorDisplay = document.getElementById('errorDisplay');
     this.successNotification = document.getElementById('successNotification');
     this.validationErrors = document.getElementById('validationErrors');
+    
     
     // Bind event listeners
     this.bindEventListeners();
@@ -56,7 +66,11 @@ class ErrorHandler {
 
   // Show different types of errors
   showError(title, message, type = 'error') {
-    if (!this.errorDisplay) return;
+    if (!this.errorDisplay) {
+      // Fallback to alert
+      alert(`${title}: ${message}`);
+      return;
+    }
 
     const errorTitle = document.getElementById('errorTitle');
     const errorMessage = document.getElementById('errorMessage');
@@ -236,28 +250,37 @@ class ErrorHandler {
   // Show toast notification
   showToast(message, type = 'info', duration = 4000) {
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast ${type} hidden`;
     toast.textContent = message;
 
     document.body.appendChild(toast);
 
+    // Show toast with CSS transition
+    setTimeout(() => {
+      toast.classList.remove('hidden');
+    }, 10);
+
     // Auto-remove toast
     setTimeout(() => {
       if (toast.parentNode) {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
+        toast.classList.add('hidden');
         setTimeout(() => {
           if (toast.parentNode) {
             toast.parentNode.removeChild(toast);
           }
-        }, 300);
+        }, 200);
       }
     }, duration);
 
     // Click to dismiss
     toast.addEventListener('click', () => {
       if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
+        toast.classList.add('hidden');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 200);
       }
     });
   }
@@ -347,10 +370,20 @@ class ErrorHandler {
 // Initialize error handler when DOM is ready
 let errorHandler;
 
-document.addEventListener('DOMContentLoaded', () => {
-  errorHandler = new ErrorHandler();
-});
+function initializeErrorHandler() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      errorHandler = new ErrorHandler();
+      window.errorHandler = errorHandler;
+    });
+  } else {
+    errorHandler = new ErrorHandler();
+    window.errorHandler = errorHandler;
+  }
+}
+
+// Initialize immediately
+initializeErrorHandler();
 
 // Export for use in other scripts
 window.ErrorHandler = ErrorHandler;
-window.errorHandler = errorHandler;

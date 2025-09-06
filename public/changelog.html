@@ -27,6 +27,16 @@
           <li><strong>Security:</strong> Implemented persistent audit logging with automatic 30-day retention</li>
           <li><strong>Security:</strong> Added file-based audit log storage with daily rotation</li>
           <li><strong>Security:</strong> Removed honeypot bot detection (user preference for better UX)</li>
+          <li><strong>New:</strong> Added forensic-grade secure delete button for browser memory clearing</li>
+          <li><strong>New:</strong> Implemented multiple-overwrite deletion of note content and attachments</li>
+          <li><strong>New:</strong> Added blob URL revocation for secure attachment cleanup</li>
+          <li><strong>New:</strong> Secure delete automatically redirects to main page after completion</li>
+          <li><strong>Improved:</strong> Comprehensive error handling system with visual feedback</li>
+          <li><strong>Improved:</strong> Professional error display with retry functionality</li>
+          <li><strong>Improved:</strong> Form validation with field-specific error messages</li>
+          <li><strong>Improved:</strong> Toast notifications for user feedback</li>
+          <li><strong>Improved:</strong> HTTP status code specific error handling</li>
+          <li><strong>Improved:</strong> Minimalistic animations that match website design</li>
           <li><strong>Improved:</strong> Switched from better-sqlite3 to sqlite3 for better Windows compatibility</li>
           <li><strong>Improved:</strong> Fixed deprecated crypto API usage (createCipher → createCipheriv)</li>
           <li><strong>Improved:</strong> Enhanced environment variable management with .env parsing</li>
@@ -34,14 +44,14 @@
           <li><strong>Improved:</strong> Replaced browser-incompatible DOMPurify/JSDOM with native sanitization</li>
           <li><strong>Improved:</strong> Enhanced error handling with detailed logging and safe client responses</li>
           <li><strong>Improved:</strong> Strengthened XSS protection across all user inputs</li>
+          <li><strong>Fixed:</strong> CSP violations from inline styles and data URLs</li>
+          <li><strong>Fixed:</strong> CSP policy updated to allow data: and blob: URLs for file previews</li>
+          <li><strong>Fixed:</strong> Loading message appearing on page load without user action</li>
           <li><strong>Fixed:</strong> Prevented encryption key regeneration on server restart</li>
           <li><strong>Fixed:</strong> Removed entropy check that blocked encrypted files</li>
           <li><strong>Fixed:</strong> URL encoding issue in note link generation</li>
-          <li><strong>Improved:</strong> Comprehensive error handling system with visual feedback</li>
-          <li><strong>Improved:</strong> Professional error display with retry functionality</li>
-          <li><strong>Improved:</strong> Form validation with field-specific error messages</li>
-          <li><strong>Improved:</strong> Toast notifications for user feedback</li>
-          <li><strong>Improved:</strong> HTTP status code specific error handling</li>
+          <li><strong>Removed:</strong> All debug code and test files for production readiness</li>
+          <li><strong>Removed:</strong> Client-side screenshot protection (ineffective and UX-breaking)</li>
         </ul>
       </section>
 

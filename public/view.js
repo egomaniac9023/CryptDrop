@@ -124,6 +124,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadingDiv.style.display = 'none';
         noteContentDiv.classList.remove('hidden');
         
+        // Set up secure delete button
+        setupSecureDelete();
+        
         // Clear the URL hash to remove the key from the browser history
         history.replaceState(null, null, window.location.pathname + window.location.search);
       }
@@ -137,6 +140,108 @@ document.addEventListener('DOMContentLoaded', async () => {
     showErrorState('An error occurred while retrieving the note.');
   }
   
+  /**
+   * Sets up the secure delete functionality
+   */
+  function setupSecureDelete() {
+    const secureDeleteBtn = document.getElementById('secureDeleteBtn');
+    
+    if (secureDeleteBtn) {
+      secureDeleteBtn.addEventListener('click', () => {
+        performSecureDelete();
+      });
+    }
+  }
+  
+  /**
+   * Performs forensic-grade secure deletion of note content
+   */
+  function performSecureDelete() {
+    const secureDeleteBtn = document.getElementById('secureDeleteBtn');
+    
+    try {
+      // Disable button during deletion
+      secureDeleteBtn.disabled = true;
+      secureDeleteBtn.textContent = '🔥 Securely Deleting...';
+      
+      // Clear message content with multiple overwrites
+      const messageDiv = document.getElementById('decryptedMessage');
+      if (messageDiv) {
+        // Overwrite with random data multiple times
+        for (let i = 0; i < 5; i++) {
+          messageDiv.textContent = generateRandomString(messageDiv.textContent.length || 1000);
+        }
+        messageDiv.textContent = '';
+        messageDiv.innerHTML = '';
+      }
+      
+      // Clear attachment content
+      const attachmentView = document.getElementById('attachmentView');
+      if (attachmentView) {
+        // Remove all attachment elements and their data
+        const attachmentElements = attachmentView.querySelectorAll('*');
+        attachmentElements.forEach(element => {
+          if (element.src && element.src.startsWith('blob:')) {
+            URL.revokeObjectURL(element.src);
+          }
+          if (element.href && element.href.startsWith('blob:')) {
+            URL.revokeObjectURL(element.href);
+          }
+        });
+        attachmentView.innerHTML = '';
+      }
+      
+      // Clear stored note data with overwrites
+      if (noteData) {
+        if (noteData.encryptedMessage) {
+          for (let i = 0; i < 3; i++) {
+            noteData.encryptedMessage = generateRandomString(noteData.encryptedMessage.length);
+          }
+        }
+        if (noteData.attachment) {
+          for (let i = 0; i < 3; i++) {
+            noteData.attachment = generateRandomString(noteData.attachment.length);
+          }
+        }
+        noteData = null;
+      }
+      
+      // Clear attachment data
+      if (noteAttachment) {
+        noteAttachment = null;
+      }
+      
+      // Clear URL and history
+      history.replaceState(null, null, '/');
+      
+      // Force garbage collection if available
+      if (window.gc) {
+        window.gc();
+      }
+      
+      // Redirect immediately to index.html
+      window.location.href = 'index.html';
+      
+    } catch (error) {
+      console.error('Secure deletion error:', error);
+      secureDeleteBtn.disabled = false;
+      secureDeleteBtn.textContent = '❌ Deletion Failed';
+      secureDeleteBtn.style.backgroundColor = '#d32f2f';
+    }
+  }
+  
+  /**
+   * Generates random string for overwriting data
+   */
+  function generateRandomString(length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
   /**
    * Shows the error state UI
    * @param {string} message - The error message to display

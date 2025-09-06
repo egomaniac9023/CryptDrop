@@ -388,7 +388,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
     // Apply strict CSP on HTML files
     if (path.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Content-Security-Policy', "default-src 'self'");
+      res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:");
     }
   }
 }));
