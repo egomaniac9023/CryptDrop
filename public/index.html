@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CryptDrop - Create a note</title>
   <link rel="stylesheet" href="style.css">
+  <title>CryptDrop - Secure Note Sharing</title>
 </head>
 <body class="dark" data-csp-nonce="%%SERVER_NONCE%%">
   <div class="container">
@@ -18,7 +19,7 @@
       <form id="noteForm">
         <div class="form-group">
           <label for="message">Your Secret Message:</label>
-          <textarea id="message" required placeholder="Type your secret message here..."></textarea>
+          <textarea id="message" name="message" placeholder="Enter your secret message here..." required></textarea>
         </div>
         
         <div class="form-group attachment-section">
@@ -57,6 +58,29 @@
         <div class="loading-spinner"></div>
         <p>Creating your secure note...</p>
       </div>
+      
+      <!-- Error Display Section -->
+      <div id="errorDisplay" class="error-display hidden">
+        <div class="error-icon">⚠️</div>
+        <h3 id="errorTitle">Error</h3>
+        <p id="errorMessage">An error occurred while processing your request.</p>
+        <div class="error-actions">
+          <button id="retryBtn" class="retry-btn">Try Again</button>
+          <button id="dismissErrorBtn" class="dismiss-btn">Dismiss</button>
+        </div>
+      </div>
+      
+      <!-- Success Notification -->
+      <div id="successNotification" class="success-notification hidden">
+        <div class="success-icon">✅</div>
+        <p id="successMessage">Note created successfully!</p>
+      </div>
+      
+      <!-- Validation Errors -->
+      <div id="validationErrors" class="validation-errors hidden">
+        <h4>Please fix the following errors:</h4>
+        <ul id="validationList"></ul>
+      </div>
     </div>
   </div>
 
@@ -72,6 +96,7 @@
 
   <script src="script.js"></script>
   <script src="sanitize.js"></script>
+  <script src="error-handler.js"></script>
   <script src="create.js"></script>
 </body>
 </html>

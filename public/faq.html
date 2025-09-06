@@ -53,8 +53,28 @@
         </div>
         
         <div class="faq-item">
+          <h2>How is my data protected on your servers?</h2>
+          <p>In addition to client-side encryption, we implement multiple layers of server-side protection:</p>
+          <ul>
+            <li><strong>Database Encryption at Rest:</strong> All stored data is encrypted using AES-256-CBC encryption with auto-generated secure keys</li>
+            <li><strong>Secure Key Management:</strong> Encryption keys are automatically generated and stored securely in environment variables</li>
+            <li><strong>Multiple Encryption Layers:</strong> Your notes are encrypted twice - once in your browser (client-side) and again on our servers (database-level)</li>
+            <li><strong>Forensic Countermeasures:</strong> When notes are deleted, we perform multiple overwrites and database vacuuming to prevent data recovery</li>
+            <li><strong>Protection Against Attacks:</strong> We implement protection against zip bombs, malicious file uploads, and compression attacks</li>
+          </ul>
+          <p>This dual-layer encryption ensures that even if someone gained unauthorized access to our database, your data would remain protected and unreadable.</p>
+        </div>
+        
+        <div class="faq-item">
           <h2>What data do you log?</h2>
-          <p>We only temporarily store IP addresses for rate limiting purposes to prevent abuse. These are never associated with the content of messages and are only kept in memory for short periods (maximum 1 hour).</p>
+          <p>For security purposes, we maintain audit logs that include:</p>
+          <ul>
+            <li>IP addresses and timestamps of note creation/access</li>
+            <li>User agent information (browser type)</li>
+            <li>Security events (failed uploads, validation errors)</li>
+            <li>Note metadata (creation/deletion events, file attachment presence)</li>
+          </ul>
+          <p><strong>Important:</strong> We never log the actual content of your messages or files. All audit logs are automatically deleted after 30 days. These logs are used solely for security monitoring and abuse prevention.</p>
         </div>
         
         <div class="faq-item">

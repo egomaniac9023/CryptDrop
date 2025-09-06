@@ -28,7 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Check file size (limit to 15MB)
     if (file.size > 15 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 15MB.');
+      if (window.errorHandler) {
+        window.errorHandler.showError('File Too Large', 'The selected file is too large. Maximum size is 15MB.', 'file');
+        window.errorHandler.showFieldError('attachment', 'File is too large (max 15MB)');
+      } else {
+        alert('File is too large. Maximum size is 15MB.');
+      }
       attachmentInput.value = '';
       return;
     }
@@ -116,9 +121,25 @@ document.addEventListener('DOMContentLoaded', () => {
   noteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Clear previous errors
+    if (window.errorHandler) {
+      window.errorHandler.clearAll();
+    }
+
+    // Validate form using error handler
+    const formData = new FormData(noteForm);
+    if (window.errorHandler && !window.errorHandler.validateForm(formData)) {
+      return;
+    }
+
     const message = messageInput.value.trim();
     if (!message) {
-      alert('Please enter a message');
+      if (window.errorHandler) {
+        window.errorHandler.showError('Missing Message', 'Please enter a message to create a secure note.', 'validation');
+        window.errorHandler.showFieldError('message', 'Message is required');
+      } else {
+        alert('Please enter a message');
+      }
       return;
     }
     
@@ -163,7 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create note');
+        if (window.errorHandler) {
+          window.errorHandler.handleFetchError(new Error('HTTP Error'), response);
+        } else {
+          throw new Error('Failed to create note');
+        }
+        return;
       }
       
       const data = await response.json();
@@ -171,16 +197,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // Generate the secure note URL with the encryption key in the hash
       const noteUrl = `${window.location.origin}/view.html?id=${data.id}#${encryptionKey}`;
       
-      // Display the result with sanitization
-      window.securityUtils.safeSetTextContent(noteLinkDiv, noteUrl);
+      // Display the result without sanitization (URLs are safe)
+      noteLinkDiv.textContent = noteUrl;
       resultDiv.classList.remove('hidden');
       loadingDiv.style.display = 'none';
       
+      // Show success message
+      if (window.errorHandler) {
+        window.errorHandler.showSuccess('Secure note created successfully! Share the link below.');
+      }
+      
       // Set up copy button
       copyBtn.addEventListener('click', () => {
-        // Use a sanitized URL value when copying to clipboard
-        const sanitizedUrl = window.securityUtils.sanitizeContent(noteUrl);
-        navigator.clipboard.writeText(sanitizedUrl)
+        // Copy the original URL without sanitization
+        navigator.clipboard.writeText(noteUrl)
           .then(() => {
             window.securityUtils.safeSetTextContent(copyBtn, 'Copied!');
             setTimeout(() => {
@@ -189,6 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
           })
           .catch(err => {
             console.error('Failed to copy: ', err);
+            if (window.errorHandler) {
+              window.errorHandler.showToast('Failed to copy link to clipboard', 'error');
+            }
           });
       });
     } catch (error) {
@@ -196,7 +229,12 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingDiv.style.display = 'none';
       noteForm.style.display = 'block';
       submitBtn.disabled = false;
-      showError('Failed to create secure note. Please try again.');
+      
+      if (window.errorHandler) {
+        window.errorHandler.handleFetchError(error);
+      } else {
+        showError('Failed to create secure note. Please try again.');
+      }
     }
   });
 });

@@ -1,44 +1,34 @@
 /**
  * Client-side sanitization utilities for protecting against XSS
  * This small utility adds an extra layer of protection beyond server-side sanitization
+ * Uses browser-compatible sanitization without external dependencies
  */
 
-// Create a DOMPurify instance for sanitizing content
-const createDOMPurify = () => {
-  // Check if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    // Create a document object for DOMPurify to use
-    const { JSDOM } = require('jsdom');
-    const window = new JSDOM('').window;
-    const DOMPurify = require('dompurify')(window);
-    
-    // Configure DOMPurify for maximum safety
-    DOMPurify.setConfig({
-      ALLOWED_TAGS: [],         // No HTML tags allowed at all
-      ALLOWED_ATTR: [],         // No attributes allowed
-      ALLOW_DATA_ATTR: false,   // Disallow data attributes
-      USE_PROFILES: { html: false }, // Don't use HTML profiles
-      FORBID_TAGS: ['style', 'script', 'iframe', 'frame', 'object', 'embed', 'form'],
-      FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover']
-    });
-    
-    return DOMPurify;
-  }
-  
-  // Fallback for non-browser environments
+// Browser-compatible DOMPurify alternative for basic sanitization
+const createSanitizer = () => {
   return {
     sanitize: (content) => {
       if (typeof content !== 'string') return '';
       
-      // Simple HTML tag stripping for non-browser environments
+      // Comprehensive HTML and script sanitization
       return content
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/&lt;/g, '<')    // Fix common entities
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"')
-        .replace(/&#x27;/g, "'")
-        .replace(/&#x2F;/g, '/');
+        // Remove script tags and their content
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        // Remove all HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Remove javascript: and data: protocols
+        .replace(/javascript:/gi, '')
+        .replace(/data:/gi, '')
+        .replace(/vbscript:/gi, '')
+        // Remove event handlers
+        .replace(/on\w+\s*=/gi, '')
+        // Escape remaining dangerous characters
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
     }
   };
 };
@@ -51,25 +41,9 @@ const createDOMPurify = () => {
 function sanitizeContent(content) {
   if (typeof content !== 'string') return '';
   
-  // Basic sanitization for all environments
-  const sanitized = content
-    // Remove potentially dangerous characters and patterns
-    .replace(/javascript:/gi, '')
-    .replace(/data:/gi, '')
-    .replace(/vbscript:/gi, '')
-    .replace(/on\w+=/gi, '')
-    .replace(/<script.*?>.*?<\/script>/gis, '')
-    .replace(/<iframe.*?>.*?<\/iframe>/gis, '')
-    .replace(/<frame.*?>.*?<\/frame>/gis, '')
-    .replace(/<object.*?>.*?<\/object>/gis, '')
-    .replace(/<embed.*?>.*?<\/embed>/gis, '')
-    .replace(/<form.*?>.*?<\/form>/gis, '')
-    // Escape angle brackets to prevent HTML injection
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-    
-  // Return the sanitized content
-  return sanitized;
+  // Use the enhanced sanitizer
+  const sanitizer = createSanitizer();
+  return sanitizer.sanitize(content);
 }
 
 /**

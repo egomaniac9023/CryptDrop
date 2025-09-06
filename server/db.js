@@ -1,6 +1,6 @@
 /**
- * Database module for the Privnote clone
- * Handles all database operations using SQLite
+ * Database module for CryptDrop
+ * Handles all database operations using encrypted SQLite
  * Includes forensic countermeasures to prevent data recovery
  */
 const sqlite3 = require('sqlite3').verbose();
@@ -11,15 +11,69 @@ const crypto = require('crypto');
 // Database file path
 const dbPath = path.join(__dirname, 'notes.db');
 
-// Initialize database
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-    initializeDatabase();
+// Initialize encrypted database
+let db;
+try {
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error opening database:', err.message);
+      process.exit(1);
+    } else {
+      if (process.env.DB_ENCRYPTION_KEY) {
+        console.log('Connected to SQLite database with application-level encryption.');
+      } else {
+        console.log('Connected to SQLite database (unencrypted - consider setting DB_ENCRYPTION_KEY).');
+      }
+      initializeDatabase();
+    }
+  });
+} catch (err) {
+  console.error('Error opening database:', err.message);
+  process.exit(1);
+}
+
+// Application-level encryption functions
+function encryptData(data) {
+  if (!process.env.DB_ENCRYPTION_KEY) return data;
+  
+  try {
+    const iv = crypto.randomBytes(16);
+    const key = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY, 'salt', 32);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    // Return iv + encrypted data
+    return iv.toString('hex') + ':' + encrypted;
+  } catch (err) {
+    console.error('Encryption error:', err);
+    return data;
   }
-});
+}
+
+function decryptData(encryptedData) {
+  if (!process.env.DB_ENCRYPTION_KEY) return encryptedData;
+  
+  try {
+    const parts = encryptedData.split(':');
+    if (parts.length !== 2) return encryptedData;
+    
+    const iv = Buffer.from(parts[0], 'hex');
+    const encrypted = parts[1];
+    
+    const key = crypto.scryptSync(process.env.DB_ENCRYPTION_KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch (err) {
+    console.error('Decryption error:', err);
+    return encryptedData;
+  }
+}
 
 /**
  * Creates the notes table if it doesn't exist
@@ -50,39 +104,25 @@ function initializeDatabase() {
  * @param {Buffer} attachment.data - Encrypted file data
  * @param {string} attachment.name - Original filename (encrypted)
  * @param {string} attachment.type - MIME type (encrypted)
- * @returns {Promise} - Resolves with the note ID if successful
+ * @returns {Promise} Promise that resolves when the note is saved
  */
 function saveNote(id, encryptedMessage, attachment = null) {
   return new Promise((resolve, reject) => {
-    const createdAt = Date.now();
+    const query = `INSERT INTO notes (id, encrypted_message, created_at, has_attachment, attachment_name, attachment_type, attachment_data) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?)`;
     
-    if (attachment) {
-      // With attachment
-      db.run(
-        'INSERT INTO notes (id, encrypted_message, created_at, has_attachment, attachment_name, attachment_type, attachment_data) VALUES (?, ?, ?, 1, ?, ?, ?)',
-        [id, encryptedMessage, createdAt, attachment.name, attachment.type, attachment.data],
-        function(err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(id);
-          }
-        }
-      );
-    } else {
-      // Without attachment
-      db.run(
-        'INSERT INTO notes (id, encrypted_message, created_at, has_attachment) VALUES (?, ?, ?, 0)',
-        [id, encryptedMessage, createdAt],
-        function(err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(id);
-          }
-        }
-      );
-    }
+    const hasAttachment = attachment ? 1 : 0;
+    const attachmentName = attachment ? encryptData(attachment.name) : null;
+    const attachmentType = attachment ? encryptData(attachment.type) : null;
+    const attachmentData = attachment ? attachment.data : null;
+    
+    db.run(query, [id, encryptData(encryptedMessage), Date.now(), hasAttachment, attachmentName, attachmentType, attachmentData], function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ id: this.lastID });
+      }
+    });
   });
 }
 
@@ -93,17 +133,25 @@ function saveNote(id, encryptedMessage, attachment = null) {
  */
 function getNoteById(id) {
   return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT id, encrypted_message, created_at, has_attachment, attachment_name, attachment_type, attachment_data FROM notes WHERE id = ?',
-      [id],
-      (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row || null);
+    const query = 'SELECT * FROM notes WHERE id = ?';
+    
+    db.get(query, [id], (err, row) => {
+      if (err) {
+        reject(err);
+      } else if (row) {
+        // Decrypt data
+        row.encrypted_message = decryptData(row.encrypted_message);
+        
+        // Decrypt attachment metadata if present
+        if (row.has_attachment && row.attachment_name) {
+          row.attachment_name = decryptData(row.attachment_name);
+          row.attachment_type = decryptData(row.attachment_type);
         }
+        resolve(row);
+      } else {
+        resolve(null);
       }
-    );
+    });
   });
 }
 
@@ -174,72 +222,66 @@ function secureOverwriteNote(id) {
       // Third pass: random data
       const randomData = crypto.randomBytes(Math.ceil(contentLength / 2))
                               .toString('hex')
-                              .slice(0, contentLength);
-
-      // Execute the overwrites in sequence
-      // Start with message overwrite
-      let updatePromise = new Promise((resolveUpdate, rejectUpdate) => {
-        db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [zerosData, id], err => {
-          if (err) {
-            rejectUpdate(err);
-            return;
-          }
-          
-          db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [onesData, id], err => {
-            if (err) {
-              rejectUpdate(err);
-              return;
-            }
-            
-            db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [randomData, id], err => {
-              if (err) {
-                rejectUpdate(err);
-              } else {
-                resolveUpdate();
-              }
-            });
+                              .substring(0, contentLength);
+      
+      // Create promises for each overwrite operation
+      const overwrites = [
+        new Promise((resolve, reject) => {
+          db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [zerosData, id], (err) => {
+            if (err) reject(err);
+            else resolve();
           });
-        });
-      });
+        }),
+        new Promise((resolve, reject) => {
+          db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [onesData, id], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.run('UPDATE notes SET encrypted_message = ? WHERE id = ?', [randomData, id], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        })
+      ];
       
       // If there's an attachment, overwrite that too
       if (row.has_attachment && row.attachment_data) {
         const attachmentLength = row.attachment_data.length;
+        const randomAttachmentData = crypto.randomBytes(attachmentLength);
         
-        // Create patterns for attachment overwrite
-        const attachmentZeros = Buffer.alloc(attachmentLength, 0);
-        const attachmentOnes = Buffer.alloc(attachmentLength, 255);
-        const attachmentRandom = crypto.randomBytes(attachmentLength);
-        
-        updatePromise = updatePromise.then(() => {
-          return new Promise((resolveAttachment, rejectAttachment) => {
-            db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [attachmentZeros, id], err => {
-              if (err) {
-                rejectAttachment(err);
-                return;
-              }
-              
-              db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [attachmentOnes, id], err => {
-                if (err) {
-                  rejectAttachment(err);
-                  return;
-                }
-                
-                db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [attachmentRandom, id], err => {
-                  if (err) {
-                    rejectAttachment(err);
-                  } else {
-                    resolveAttachment();
-                  }
-                });
+        overwrites.push(new Promise((resolveAttachment, rejectAttachment) => {
+          // Overwrite attachment data multiple times
+          Promise.all([
+            new Promise((resolve, reject) => {
+              db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [Buffer.alloc(attachmentLength, 0), id], (err) => {
+                if (err) reject(err);
+                else resolve();
               });
-            });
+            }),
+            new Promise((resolve, reject) => {
+              db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [Buffer.alloc(attachmentLength, 255), id], (err) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            }),
+            new Promise((resolve, reject) => {
+              db.run('UPDATE notes SET attachment_data = ? WHERE id = ?', [randomAttachmentData, id], (err) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            })
+          ]).then(() => {
+            resolveAttachment();
+          }).catch(err => {
+            rejectAttachment(err);
           });
-        });
+        }));
       }
       
       // Resolve the main promise when all overwrites are complete
-      updatePromise.then(() => resolve()).catch(err => reject(err));
+      Promise.all(overwrites).then(() => resolve()).catch(err => reject(err));
     });
   });
 }
@@ -273,7 +315,7 @@ function deleteExpiredNotes() {
  */
 function vacuumDatabase() {
   return new Promise((resolve, reject) => {
-    db.run('VACUUM', err => {
+    db.run('VACUUM', (err) => {
       if (err) {
         reject(err);
       } else {

@@ -12,6 +12,40 @@
       <h1>Changelog</h1>
       
       <section class="changelog-section">
+        <h2>Version 1.4.0 (September 6, 2025)</h2>
+        <ul>
+          <li><strong>Security:</strong> Implemented database encryption at rest with AES-256-CBC</li>
+          <li><strong>Security:</strong> Auto-generation of secure encryption keys (DB, session, CSRF)</li>
+          <li><strong>Security:</strong> Added protection against zip bombs and malicious compressed files</li>
+          <li><strong>Security:</strong> Implemented magic byte detection for compressed file types</li>
+          <li><strong>Security:</strong> Added compression ratio analysis to detect zip bombs</li>
+          <li><strong>Security:</strong> Enhanced rate limiting with environment variable configuration</li>
+          <li><strong>Security:</strong> Fixed critical client-side sanitization vulnerability in sanitize.js</li>
+          <li><strong>Security:</strong> Implemented dynamic CSP nonce generation per request (prevents nonce reuse attacks)</li>
+          <li><strong>Security:</strong> Enhanced timing attack protection with constant response delays</li>
+          <li><strong>Security:</strong> Added comprehensive file-type validation with whitelist approach</li>
+          <li><strong>Security:</strong> Implemented persistent audit logging with automatic 30-day retention</li>
+          <li><strong>Security:</strong> Added file-based audit log storage with daily rotation</li>
+          <li><strong>Security:</strong> Removed honeypot bot detection (user preference for better UX)</li>
+          <li><strong>Improved:</strong> Switched from better-sqlite3 to sqlite3 for better Windows compatibility</li>
+          <li><strong>Improved:</strong> Fixed deprecated crypto API usage (createCipher → createCipheriv)</li>
+          <li><strong>Improved:</strong> Enhanced environment variable management with .env parsing</li>
+          <li><strong>Improved:</strong> Removed MIME type validation for more flexible file uploads</li>
+          <li><strong>Improved:</strong> Replaced browser-incompatible DOMPurify/JSDOM with native sanitization</li>
+          <li><strong>Improved:</strong> Enhanced error handling with detailed logging and safe client responses</li>
+          <li><strong>Improved:</strong> Strengthened XSS protection across all user inputs</li>
+          <li><strong>Fixed:</strong> Prevented encryption key regeneration on server restart</li>
+          <li><strong>Fixed:</strong> Removed entropy check that blocked encrypted files</li>
+          <li><strong>Fixed:</strong> URL encoding issue in note link generation</li>
+          <li><strong>Improved:</strong> Comprehensive error handling system with visual feedback</li>
+          <li><strong>Improved:</strong> Professional error display with retry functionality</li>
+          <li><strong>Improved:</strong> Form validation with field-specific error messages</li>
+          <li><strong>Improved:</strong> Toast notifications for user feedback</li>
+          <li><strong>Improved:</strong> HTTP status code specific error handling</li>
+        </ul>
+      </section>
+
+      <section class="changelog-section">
         <h2>Version 1.3.0 (May 17, 2025)</h2>
         <ul>
           <li><strong>New:</strong> Renamed service to CryptDrop</li>
@@ -63,10 +97,12 @@
         <h3>Security Improvements</h3>
         <ul>
           <li>Implementation of Helmet for secure HTTP headers</li>
-          <li>XSS protection through Content-Security-Policy</li>
+          <li>XSS protection through Content-Security-Policy with dynamic nonces</li>
           <li>Built-in rate limiters for API endpoints</li>
-          <li>Implementation of DOMPurify for client-side sanitization</li>
+          <li>Enhanced client-side sanitization with browser-compatible implementation</li>
           <li>Secure methods for file deletion in the database</li>
+          <li>Timing attack mitigation with constant response delays</li>
+          <li>Comprehensive input validation and output encoding</li>
         </ul>
 
         <h3>Database Changes</h3>

@@ -53,12 +53,20 @@
       </section>
       
       <section class="policy-section">
-        <h2>IP Addresses and Logs</h2>
-        <p>For security purposes, we implement rate limiting to prevent service abuse. This requires temporary retention of IP addresses, which are:</p>
+        <h2>Audit Logs and Data Retention</h2>
+        <p>For security monitoring and abuse prevention, we maintain audit logs that contain:</p>
         <ul>
-          <li>Never associated with message content</li>
-          <li>Not logged persistently</li>
-          <li>Only kept in memory for the duration of rate limiting windows (max 1 hour)</li>
+          <li>IP addresses and timestamps of service usage</li>
+          <li>User agent information (browser type and version)</li>
+          <li>Security-related events (failed uploads, validation errors)</li>
+          <li>Note metadata (creation/deletion events, attachment presence)</li>
+        </ul>
+        <p><strong>Important guarantees:</strong></p>
+        <ul>
+          <li>We never log the actual content of your messages or files</li>
+          <li>Audit logs are automatically deleted after 30 days</li>
+          <li>Log data is never associated with message content</li>
+          <li>Logs are used solely for security monitoring and service protection</li>
         </ul>
       </section>
       

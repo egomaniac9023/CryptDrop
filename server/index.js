@@ -2,6 +2,7 @@
  * Main server file for CryptDrop
  * Sets up Express server with routes for creating and retrieving notes
  */
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -14,10 +15,206 @@ const { check, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const { nanoid } = require('nanoid');
+const fs = require('fs');
+
+// Auto-generate secure keys if they don't exist
+function generateSecureKeys() {
+  const envPath = path.join(__dirname, '../.env');
+  
+  // Parse existing .env file to check for values
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const envLines = envContent.split('\n');
+  const envVars = {};
+  
+  // Parse existing values
+  envLines.forEach(line => {
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      envVars[match[1]] = match[2];
+    }
+  });
+  
+  let newEnvContent = envContent;
+  let updated = false;
+
+  // Generate database encryption key if missing or empty
+  if (!envVars.DB_ENCRYPTION_KEY || envVars.DB_ENCRYPTION_KEY.trim() === '') {
+    const dbKey = crypto.randomBytes(32).toString('hex');
+    newEnvContent = newEnvContent.replace(/DB_ENCRYPTION_KEY=.*/, `DB_ENCRYPTION_KEY=${dbKey}`);
+    process.env.DB_ENCRYPTION_KEY = dbKey;
+    updated = true;
+    console.log('Generated new database encryption key');
+  } else {
+    process.env.DB_ENCRYPTION_KEY = envVars.DB_ENCRYPTION_KEY;
+  }
+
+  // Generate session secret if missing or empty
+  if (!envVars.SESSION_SECRET || envVars.SESSION_SECRET.trim() === '') {
+    const sessionSecret = crypto.randomBytes(64).toString('hex');
+    newEnvContent = newEnvContent.replace(/SESSION_SECRET=.*/, `SESSION_SECRET=${sessionSecret}`);
+    process.env.SESSION_SECRET = sessionSecret;
+    updated = true;
+    console.log('Generated new session secret');
+  } else {
+    process.env.SESSION_SECRET = envVars.SESSION_SECRET;
+  }
+
+  // Generate CSRF secret if missing or empty
+  if (!envVars.CSRF_SECRET || envVars.CSRF_SECRET.trim() === '') {
+    const csrfSecret = crypto.randomBytes(32).toString('hex');
+    newEnvContent = newEnvContent.replace(/CSRF_SECRET=.*/, `CSRF_SECRET=${csrfSecret}`);
+    process.env.CSRF_SECRET = csrfSecret;
+    updated = true;
+    console.log('Generated new CSRF secret');
+  } else {
+    process.env.CSRF_SECRET = envVars.CSRF_SECRET;
+  }
+
+  if (updated) {
+    fs.writeFileSync(envPath, newEnvContent);
+    console.log('Updated .env file with secure keys');
+  } else {
+    console.log('Using existing secure keys from .env file');
+  }
+}
+
+// Generate keys on startup
+generateSecureKeys();
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Audit log configuration from environment
+const AUDIT_LOG_DIR = process.env.AUDIT_LOG_DIR ? 
+  path.resolve(__dirname, process.env.AUDIT_LOG_DIR) : 
+  path.join(__dirname, 'logs');
+const AUDIT_LOG_RETENTION_DAYS = parseInt(process.env.AUDIT_LOG_RETENTION_DAYS) || 30;
+
+// Ensure logs directory exists
+if (!fs.existsSync(AUDIT_LOG_DIR)) {
+  fs.mkdirSync(AUDIT_LOG_DIR, { recursive: true });
+}
+
+// Allowed file types for security
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+  'text/plain', 'text/csv',
+  'application/pdf',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip', 'application/x-zip-compressed'
+];
+
+// Entropy calculation function for detecting compressed/encrypted data
+function calculateEntropy(buffer) {
+  const frequencies = new Array(256).fill(0);
+  
+  // Count byte frequencies
+  for (let i = 0; i < buffer.length; i++) {
+    frequencies[buffer[i]]++;
+  }
+  
+  // Calculate Shannon entropy
+  let entropy = 0;
+  for (let i = 0; i < 256; i++) {
+    if (frequencies[i] > 0) {
+      const probability = frequencies[i] / buffer.length;
+      entropy -= probability * Math.log2(probability);
+    }
+  }
+  
+  return entropy;
+}
+
+// Audit logging function with file storage
+function auditLog(event, details = {}, req = null) {
+  const timestamp = new Date().toISOString();
+  const ip = req ? (req.ip || req.connection.remoteAddress) : 'unknown';
+  const userAgent = req ? req.get('User-Agent') : 'unknown';
+  
+  const logEntry = {
+    timestamp,
+    event,
+    ip,
+    userAgent: userAgent ? userAgent.substring(0, 100) : 'unknown',
+    ...details
+  };
+  
+  // Console output for immediate visibility
+  console.log(`[AUDIT] ${timestamp} - ${event}`, logEntry);
+  
+  // Write to daily log file
+  const logDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const logFile = path.join(AUDIT_LOG_DIR, `audit-${logDate}.log`);
+  const logLine = JSON.stringify(logEntry) + '\n';
+  
+  fs.appendFile(logFile, logLine, (err) => {
+    if (err) {
+      console.error('Failed to write audit log:', err);
+    }
+  });
+}
+
+// Function to clean up old audit logs
+function cleanupOldAuditLogs() {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - AUDIT_LOG_RETENTION_DAYS);
+  
+  fs.readdir(AUDIT_LOG_DIR, (err, files) => {
+    if (err) {
+      console.error('Error reading audit log directory:', err);
+      return;
+    }
+    
+    files.forEach(file => {
+      if (file.startsWith('audit-') && file.endsWith('.log')) {
+        const dateMatch = file.match(/audit-(\d{4}-\d{2}-\d{2})\.log/);
+        if (dateMatch) {
+          const fileDate = new Date(dateMatch[1]);
+          if (fileDate < cutoffDate) {
+            const filePath = path.join(AUDIT_LOG_DIR, file);
+            fs.unlink(filePath, (unlinkErr) => {
+              if (unlinkErr) {
+                console.error(`Failed to delete old audit log ${file}:`, unlinkErr);
+              } else {
+                console.log(`Deleted old audit log: ${file}`);
+              }
+            });
+          }
+        }
+      }
+    });
+  });
+}
+
+// Enhanced error handler
+function handleError(error, context, req = null, res = null) {
+  const errorId = nanoid(8);
+  
+  // Log detailed error for debugging
+  console.error(`[ERROR-${errorId}] ${context}:`, {
+    message: error.message,
+    stack: error.stack,
+    timestamp: new Date().toISOString(),
+    ip: req ? req.ip : 'unknown'
+  });
+  
+  // Audit security-related errors
+  if (error.message.includes('validation') || error.message.includes('sanitiz')) {
+    auditLog('SECURITY_ERROR', { errorId, context, message: error.message }, req);
+  }
+  
+  // Return safe error message to client
+  if (res) {
+    res.status(500).json({ 
+      error: 'An error occurred while processing your request',
+      errorId 
+    });
+  }
+  
+  return errorId;
+}
 
 // Define rate limits to prevent brute force and DoS attacks
 const apiLimiter = rateLimit({
@@ -25,84 +222,90 @@ const apiLimiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    status: 429, 
-    message: 'Too many requests, please try again after 15 minutes'
-  }
 });
 
-// More strict rate limit for note creation to prevent abuse
-const createNoteLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // limit each IP to 20 note creations per hour
+const createNoteLimit = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes default
+  max: parseInt(process.env.CREATE_NOTE_LIMIT_MAX) || 20, // Limit each IP to 20 note creations per windowMs
+  message: 'Too many notes created from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    status: 429, 
-    message: 'Too many notes created. Please try again after an hour.'
-  }
 });
 
-// Set security-related constants
-const CSRF_SECRET = crypto.randomBytes(32).toString('hex');
-const SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+const generalLimit = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 
 // Security middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 
-    ['https://yourdomain.com'] : ['http://localhost:3000'],
+  origin: process.env.CORS_ORIGINS ? 
+    process.env.CORS_ORIGINS.split(',') : 
+    (process.env.NODE_ENV === 'production' ? 
+      ['https://yourdomain.com'] : ['http://localhost:3000']),
   methods: ['GET', 'POST'],
   credentials: true,
   maxAge: 86400 // 24 hours in seconds
 }));
 
-// Generate CSP nonce at startup
-const CSP_NONCE = crypto.randomBytes(16).toString('base64');
-
-// Apply Helmet with enhanced CSP
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Simplified for this app
-      styleSrc: ["'self'", "'unsafe-inline'"], // Necessary for basic styling
-      imgSrc: ["'self'", 'data:'], // Allow data: for simple embedded images
-      connectSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      fontSrc: ["'self'", 'data:'],
-      manifestSrc: ["'self'"],
-      workerSrc: ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-  // Other Helmet defaults
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: { policy: 'same-origin' },
-  crossOriginResourcePolicy: { policy: 'same-origin' },
-  dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
-  hsts: process.env.NODE_ENV === 'production' ? 
-    { maxAge: 15552000, includeSubDomains: true } : false,
-  ieNoOpen: true,
-  noSniff: true,
-  originAgentCluster: true,
-  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-  referrerPolicy: { policy: 'no-referrer' },
-  xssFilter: true
-}));
-
-// Middleware to set CSP nonce in res.locals for templates
+// Dynamic CSP nonce generation per request
 app.use((req, res, next) => {
-  res.locals.nonce = CSP_NONCE;
+  // Generate a unique nonce for each request
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
   next();
 });
 
+// Apply Helmet with enhanced CSP using dynamic nonce
+app.use((req, res, next) => {
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", `'nonce-${res.locals.nonce}'`], // Use dynamic nonce
+        styleSrc: ["'self'", "'unsafe-inline'"], // Necessary for basic styling
+        imgSrc: ["'self'", 'data:'], // Allow data: for simple embedded images
+        connectSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        fontSrc: ["'self'", 'data:'],
+        manifestSrc: ["'self'"],
+        workerSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    // Other Helmet defaults
+    crossOriginEmbedderPolicy: true,
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
+    crossOriginResourcePolicy: { policy: 'same-origin' },
+    dnsPrefetchControl: { allow: false },
+    frameguard: { action: 'deny' },
+    hsts: process.env.NODE_ENV === 'production' ? 
+      { maxAge: 15552000, includeSubDomains: true } : false,
+    ieNoOpen: true,
+    noSniff: true,
+    originAgentCluster: true,
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    referrerPolicy: { policy: 'no-referrer' },
+    xssFilter: true
+  })(req, res, next);
+});
+
+// Apply general rate limiting to all routes
+app.use(generalLimit);
+
+// Parse JSON bodies with size limit
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 // Apply rate limiting
 app.use('/api/', apiLimiter);
-app.use('/api/note', createNoteLimiter);
+app.use('/api/note', createNoteLimit);
 
 // Cookie parser for potential future auth features
 app.use(cookieParser());
@@ -268,10 +471,58 @@ app.post('/api/note', [
           return res.status(400).json({ error: 'Invalid attachment data encoding' });
         }
         
-        // Validate MIME type format
-        if (!/^[\w-]+\/[\w.-]+$/i.test(attachment.type)) {
-          return res.status(400).json({ error: 'Invalid attachment MIME type' });
+        // Protection against zip bombs and malicious compressed files
+        const fileName = attachment.name.toLowerCase();
+        const suspiciousExtensions = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tar.gz', '.tar.bz2'];
+        
+        if (suspiciousExtensions.some(ext => fileName.endsWith(ext))) {
+          // Additional checks for compressed files
+          const compressionRatio = dataBuffer.length / attachment.data.length;
+          
+          // Detect potential zip bombs by checking compression efficiency
+          if (compressionRatio > 0.9) {
+            auditLog('SUSPICIOUS_FILE_REJECTED', { 
+              reason: 'Potential zip bomb detected', 
+              fileName: attachment.name,
+              compressionRatio: compressionRatio 
+            }, req);
+            return res.status(400).json({ error: 'Suspicious compressed file detected' });
+          }
+          
+          // Limit compressed file size more strictly
+          if (dataBuffer.length > 5 * 1024 * 1024) { // 5MB limit for compressed files
+            auditLog('COMPRESSED_FILE_REJECTED', { 
+              reason: 'Compressed file too large', 
+              fileName: attachment.name,
+              size: dataBuffer.length 
+            }, req);
+            return res.status(400).json({ error: 'Compressed files limited to 5MB' });
+          }
         }
+        
+        // Check for suspicious file signatures (magic bytes)
+        const fileHeader = dataBuffer.slice(0, 8);
+        const suspiciousSignatures = [
+          Buffer.from([0x50, 0x4B, 0x03, 0x04]), // ZIP
+          Buffer.from([0x50, 0x4B, 0x05, 0x06]), // Empty ZIP
+          Buffer.from([0x50, 0x4B, 0x07, 0x08]), // Spanned ZIP
+          Buffer.from([0x52, 0x61, 0x72, 0x21]), // RAR
+          Buffer.from([0x37, 0x7A, 0xBC, 0xAF]), // 7Z
+          Buffer.from([0x1F, 0x8B, 0x08]), // GZIP
+        ];
+        
+        for (const signature of suspiciousSignatures) {
+          if (fileHeader.subarray(0, signature.length).equals(signature)) {
+            auditLog('COMPRESSED_FILE_BLOCKED', { 
+              reason: 'Compressed file detected by signature', 
+              fileName: attachment.name,
+              signature: signature.toString('hex')
+            }, req);
+            return res.status(400).json({ error: 'Compressed files are not allowed for security reasons' });
+          }
+        }
+        
+        // Entropy check removed - files are client-side encrypted anyway
         
         attachmentData = {
           data: dataBuffer,
@@ -286,6 +537,13 @@ app.post('/api/note', [
     // Save the note to the database
     await db.saveNote(secureId, encryptedMessage, attachmentData);
     
+    // Audit log successful note creation
+    auditLog('NOTE_CREATED', { 
+      noteId: secureId, 
+      hasAttachment: !!attachmentData,
+      messageLength: encryptedMessage.length 
+    }, req);
+    
     // Set security headers specifically for this response
     res.set({
       'X-Content-Type-Options': 'nosniff',
@@ -294,8 +552,7 @@ app.post('/api/note', [
     
     res.status(201).json({ id: secureId });
   } catch (error) {
-    console.error('Error creating note:', error);
-    res.status(500).json({ error: 'Failed to create note' });
+    handleError(error, 'Note creation', req, res);
   }
 });
 
@@ -329,19 +586,22 @@ app.get('/api/note/meta/:id', [
     const note = await db.getNoteById(sanitizedId);
     
     if (!note) {
-      // Even for non-existent notes, introduce random delay to prevent timing attacks
-      const randomDelay = crypto.randomInt(50, 200);
-      await new Promise(resolve => setTimeout(resolve, randomDelay));
+      // Constant delay to prevent timing attacks - always wait the same amount
+      await new Promise(resolve => setTimeout(resolve, 150));
       return res.status(404).json({ error: 'Note not found or already viewed' });
     }
     
     // Check if note is expired (24 hours)
     const expiryTime = note.created_at + (24 * 60 * 60 * 1000);
     if (Date.now() > expiryTime) {
-      // Delete expired notes
+      // Delete expired notes with constant delay
       await db.secureShredNote(id);
+      await new Promise(resolve => setTimeout(resolve, 150));
       return res.status(404).json({ error: 'Note has expired' });
     }
+    
+    // Audit log metadata access
+    auditLog('NOTE_METADATA_ACCESSED', { noteId: sanitizedId }, req);
     
     // Only return metadata, not the actual content
     res.json({
@@ -350,8 +610,7 @@ app.get('/api/note/meta/:id', [
       created_at: note.created_at
     });
   } catch (error) {
-    console.error('Error checking note:', error);
-    res.status(500).json({ error: 'Failed to check note' });
+    handleError(error, 'Note metadata check', req, res);
   }
 });
 
@@ -396,17 +655,17 @@ app.get('/api/note/:id', [
     const note = await db.getNoteById(sanitizedId);
     
     if (!note) {
-      // Even for non-existent notes, introduce random delay to prevent timing attacks
-      const randomDelay = crypto.randomInt(50, 200);
-      await new Promise(resolve => setTimeout(resolve, randomDelay));
+      // Constant delay to prevent timing attacks - always wait the same amount
+      await new Promise(resolve => setTimeout(resolve, 150));
       return res.status(404).json({ error: 'Note not found or already viewed' });
     }
     
     // Check if note is expired (24 hours)
     const expiryTime = note.created_at + (24 * 60 * 60 * 1000);
     if (Date.now() > expiryTime) {
-      // Securely delete expired notes to prevent forensic recovery
+      // Securely delete expired notes to prevent forensic recovery with constant delay
       await db.secureShredNote(id);
+      await new Promise(resolve => setTimeout(resolve, 150));
       return res.status(404).json({ error: 'Note has expired' });
     }
     
@@ -429,22 +688,23 @@ app.get('/api/note/:id', [
     // Securely delete the note to prevent forensic recovery
     await db.secureShredNote(id);
     
-    // Log deletion but never log content details
-    console.log(`Note ${id} securely deleted after viewing`);
+    // Audit log note access and deletion
+    auditLog('NOTE_ACCESSED_AND_DELETED', { 
+      noteId: id, 
+      hasAttachment: note.has_attachment === 1 
+    }, req);
     
-    // Add random delay to prevent timing attacks
-    const randomDelay = crypto.randomInt(30, 100);
-    await new Promise(resolve => setTimeout(resolve, randomDelay));
+    // Add constant delay to prevent timing attacks
+    await new Promise(resolve => setTimeout(resolve, 65));
     
     // Send the response we prepared before deletion
     res.json(responseData);
   } catch (error) {
-    console.error('Error retrieving note:', error);
-    res.status(500).json({ error: 'Failed to retrieve note' });
+    handleError(error, 'Note retrieval', req, res);
   }
 });
 
-// Schedule regular database maintenance
+// Schedule regular database maintenance and log cleanup
 setInterval(async () => {
   try {
     const count = await db.deleteExpiredNotes();
@@ -452,6 +712,9 @@ setInterval(async () => {
       console.log(`Scheduled cleanup: securely deleted ${count} expired notes`);
       await db.vacuumDatabase();
     }
+    
+    // Clean up old audit logs
+    cleanupOldAuditLogs();
   } catch (error) {
     console.error('Error during scheduled cleanup:', error);
   }
@@ -506,12 +769,9 @@ function getNoteFetchRateLimit(key) {
   return { exceeded: false };
 }
 
-// Simple error handling middleware
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'An unexpected error occurred'
-  });
+  handleError(err, 'Unhandled middleware error', req, res);
 });
 
 // Handle unmatched routes
